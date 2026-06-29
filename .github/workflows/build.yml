@@ -1,0 +1,23 @@
+name: Build                      # <-- the deploy workflow references this name
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read                 # no secrets; read-only token
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm run build
+      - name: Upload preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dev-pages         # must match the deployer's download name
+          path: dist

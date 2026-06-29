@@ -1,0 +1,41 @@
+name: Deploy fork preview
+
+on:
+  workflow_run:
+    workflows: ["Build"]          # must equal build.yml's `name:`
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read                   # needed for cross-run artifact download
+
+jobs:
+  deploy:
+    # Fork-only + only if the build succeeded
+    if: >
+      ${{ github.event.workflow_run.event == 'pull_request' &&
+          github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.head_repository.full_name != github.event.workflow_run.repository.full_name }}
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    environment:
+      name: fork-dev-pages        # fork-namespaced; no reviewers => no gate (yet)
+    steps:
+      - name: Download artifact (cross-run)
+        uses: actions/download-artifact@v4
+        with:
+          name: dev-pages
+          path: build
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+      - name: Show what we got
+        run: ls -R build
+      - name: Prove secret access
+        env:
+          TEST_SECRET: ${{ secrets.TEST_SECRET }}
+        run: |
+          if [ -n "$TEST_SECRET" ]; then
+            echo "Secret IS available in the deploy run (length: ${#TEST_SECRET})"
+          else
+            echo "No secret found"; exit 1
+          fi

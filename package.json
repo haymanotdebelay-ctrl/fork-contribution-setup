@@ -1,0 +1,7 @@
+{
+  "name": "fork-preview-test",
+  "private": true,
+  "scripts": {
+    "build": "mkdir -p dist && echo \"<h1>Preview $(git rev-parse --short HEAD)</h1>\" > dist/index.html"
+  }
+}
