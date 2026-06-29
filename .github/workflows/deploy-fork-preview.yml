@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     environment:
-      name: fork-dev-pages        # fork-namespaced; no reviewers => no gate (yet)
+      name: fork-dev-pages-not-created-yet        # fork-namespaced; no reviewers => no gate (yet)
     steps:
       - name: Download artifact (cross-run)
         uses: actions/download-artifact@v4
