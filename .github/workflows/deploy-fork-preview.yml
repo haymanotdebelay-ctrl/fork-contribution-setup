@@ -24,7 +24,7 @@ jobs:
       - name: Download artifact (cross-run)
         uses: actions/download-artifact@v4
         with:
-          name: dev-pages
+          name: test-pages
           path: build
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ github.token }}
