@@ -1,0 +1,58 @@
+name: Measure bundle size          # <-- the report workflow references this name
+
+on:
+  pull_request:
+    branches:
+      - main
+
+# This workflow runs untrusted PR code (npm run build) and therefore requests no
+# write permissions. Fork PRs would have their token downgraded to read-only
+# anyway. Posting the commit status is delegated to the separate "Report bundle
+# size" workflow (bundle-size-report.yml), which runs with elevated permissions
+# but never executes PR code.
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the PR
+        uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # ------- Base branch size measurement ------------------------------
+      # Checked out into ./base so we can build both revisions in one job.
+      - name: Checkout the base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+      - name: Build and measure the base branch
+        working-directory: base
+        run: |
+          npm run build
+          node ../bundle-size/measure.js dist > ../bundle-size/output-basebranch.json
+          cat ../bundle-size/output-basebranch.json
+
+      # ------- PR size measurement ---------------------------------------
+      - name: Build and measure this PR
+        run: |
+          npm run build
+          node bundle-size/measure.js dist > bundle-size/output.json
+          cat bundle-size/output.json
+
+      # Only the numeric measurements are uploaded. The report workflow derives
+      # the commit SHA from the trusted workflow_run event, not from this
+      # artifact, and handles a missing/failed run via the run conclusion — so
+      # no artifact is needed on the failure path.
+      - name: Upload size report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: size-report
+          path: |
+            bundle-size/output.json
+            bundle-size/output-basebranch.json
+          if-no-files-found: error
